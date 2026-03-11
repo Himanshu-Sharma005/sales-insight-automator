@@ -33,9 +33,7 @@ jobs:
 
       - name: Lint with flake8
         run: |
-          # Fail on syntax errors or undefined names; ignore line-length
           flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
-          # Warnings only for style issues
           flake8 app/ --count --exit-zero --max-complexity=12 --max-line-length=120 --statistics
 
       - name: Validate FastAPI startup (import check)
@@ -46,9 +44,6 @@ jobs:
   frontend-ci:
     name: Frontend – Lint & Build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
 
     steps:
       - name: Checkout code
@@ -58,22 +53,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        working-directory: frontend
+        run: npm install --legacy-peer-deps
 
       - name: Lint with ESLint
-        run: npm run lint || true  # warn only – don't fail on style issues
+        working-directory: frontend
+        run: npm run lint || true
 
       - name: Build production bundle
+        working-directory: frontend
         env:
           REACT_APP_API_URL: https://api.example.com
-          CI: false  # Prevent treating warnings as errors
+          CI: false
         run: npm run build
 
       - name: Verify build output
+        working-directory: frontend
         run: |
           ls -la build/
           test -f build/index.html && echo "✅ index.html present"
@@ -130,5 +127,5 @@ jobs:
       - name: Audit Node.js dependencies
         working-directory: frontend
         run: |
-          npm install
+          npm install --legacy-peer-deps
           npm audit --audit-level=high || true
